@@ -1,0 +1,57 @@
+{
+  "name": "Ada Example",
+  "headline": "Engineer who makes ML systems boring in production.",
+  "location": "Toronto, ON",
+  "links": {
+    "github": "https://github.com/example-ada",
+    "linkedin": "https://www.linkedin.com/in/example-ada"
+  },
+  "facts": [
+    {
+      "id": "exp-acme-2024-aiops",
+      "kind": "experience",
+      "title": "AI Ops Engineer, Acme",
+      "detail": "Owned the eval and observability stack for Acme's customer-support agent. Built a rubric-based eval harness, instrumented every tool call with OpenTelemetry, and shipped a public Langfuse dashboard the on-call team uses during incidents.",
+      "tags": ["aiops", "evals", "observability", "python", "on-call"],
+      "started_on": "2024-03-01",
+      "ended_on": "2026-04-30",
+      "metrics": {
+        "agent_p95_latency_reduction": "38%",
+        "hallucination_rate_post_eval_gate": "0.7%",
+        "tickets_handled_per_week_at_steady_state": "2400"
+      },
+      "provenance": [
+        {
+          "source": "resume.pdf p.1",
+          "verified_by": "self",
+          "retrieved_at": "2026-05-13"
+        },
+        {
+          "source": "Acme careers page (archived)",
+          "source_url": "https://web.archive.org/web/2026/https://acme.example/careers",
+          "verified_by": "third_party"
+        }
+      ]
+    },
+    {
+      "id": "proj-evalkit",
+      "kind": "project",
+      "title": "evalkit — minimal eval harness for LLM apps",
+      "detail": "Open-source pytest-style rubric runner for LLM applications. Used internally at Acme and adopted by two external teams.",
+      "tags": ["evals", "open-source", "python", "ai-tooling"],
+      "started_on": "2024-06-01",
+      "metrics": {
+        "github_stars": "412",
+        "external_adopters": "2"
+      },
+      "provenance": [
+        {
+          "source": "github.com/example-ada/evalkit README",
+          "source_url": "https://github.com/example-ada/evalkit",
+          "verified_by": "self",
+          "retrieved_at": "2026-05-13"
+        }
+      ]
+    }
+  ]
+}
