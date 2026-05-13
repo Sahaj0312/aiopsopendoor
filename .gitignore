@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets — never commit these
+.env
+.env.*
+!.env.example
+
+# Personal application data — only redacted examples ever land in git
+inputs/*.local.*
+inputs/private/
+outputs/private/
+evidence/private/
+*.resume.pdf
+*.cv.pdf
+
+# Traces / runs — generated, large, can leak content
+runs/
+traces/
+.langfuse/
+
+# Tooling
+.python-version.local
+.DS_Store
+.idea/
+.vscode/
+*.swp
