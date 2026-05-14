@@ -223,19 +223,26 @@ def test_full_pipeline_runs_and_writes_artifacts(tmp_path: Path) -> None:
 
 def test_runner_build_jd_source_picks_right_implementation(tmp_path: Path) -> None:
     """The runner's tiny picker function — keep it honest."""
-    from applyops.agents.jd_source import FileJDSource, HttpJDSource
+    from applyops.agents.jd_source import FileJDSource, HttpJDSource, PlaywrightJDSource
     from applyops.runner import build_jd_source
 
     jd_file = tmp_path / "jd.md"
     jd_file.write_text("# fake jd\n")
     cfg_file = _stub_cfg(jd_file=jd_file)
     cfg_url = _stub_cfg(jd_url="https://example.test/jd")
+    cfg_render = _stub_cfg(jd_url="https://example.test/jd", render_jd=True)
 
     assert isinstance(build_jd_source(cfg_file), FileJDSource)
     assert isinstance(build_jd_source(cfg_url), HttpJDSource)
+    assert isinstance(build_jd_source(cfg_render), PlaywrightJDSource)
 
 
-def _stub_cfg(*, jd_url: str | None = None, jd_file: Path | None = None) -> object:
+def _stub_cfg(
+    *,
+    jd_url: str | None = None,
+    jd_file: Path | None = None,
+    render_jd: bool = False,
+) -> object:
     """Build a minimal RunConfig — only fields used by build_jd_source matter here."""
     from applyops.runner import RunConfig
 
@@ -253,4 +260,6 @@ def _stub_cfg(*, jd_url: str | None = None, jd_file: Path | None = None) -> obje
         critic_model="m",
         factcheck_model="m",
         max_rebases_per_gate=1,
+        render_jd=render_jd,
+        jd_wait_selector=None,
     )

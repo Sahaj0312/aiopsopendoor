@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Job opening — FakeCorp ATS</title>
+</head>
+<body>
+  <nav>top nav</nav>
+  <div id="app">
+    <p>Loading...</p>
+  </div>
+  <footer>footer</footer>
+  <script>
+    // Simulate a React-style SPA that injects the JD after a tick.
+    // A bare httpx.get sees only the "Loading..." shell above; the
+    // PlaywrightJDSource must wait for this to populate.
+    setTimeout(() => {
+      const root = document.getElementById('app');
+      root.innerHTML = `
+        <article data-testid="job-posting">
+          <h1>AI Ops Engineer — FakeCorp</h1>
+          <h2>What you'll do</h2>
+          <ul>
+            <li>Own evals and observability for our agent platform.</li>
+            <li>Run on-call for agent incidents.</li>
+          </ul>
+          <h2>What we need</h2>
+          <ul>
+            <li>Strong Python.</li>
+            <li>Production LLM/ML experience.</li>
+          </ul>
+          <p>To apply, use AI throughout the application and tell us how.</p>
+        </article>`;
+    }, 100);
+  </script>
+</body>
+</html>

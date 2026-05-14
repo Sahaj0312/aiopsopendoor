@@ -126,3 +126,83 @@ class FileJDSource:
             snapshot_path=str(self.path),
             drift=False,
         )
+
+
+class PlaywrightJDSource:
+    """Fetch a JD from a JavaScript-rendered SPA (Rippling, Greenhouse, Lever, etc.).
+
+    Bare `httpx.get` returns the React shell with no JD content on most
+    modern ATS systems. This source launches a headless browser, waits
+    for the page to reach networkidle, extracts the rendered text from
+    the body, snapshots it, and detects drift the same way as
+    HttpJDSource.
+
+    Requires the `submit` extras (playwright) and `playwright install
+    chromium` to have been run.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        snapshot_dir: str | Path = "inputs",
+        slug: str = "jd",
+        *,
+        wait_for_selector: str | None = None,
+        wait_timeout_ms: int = 30_000,
+        headless: bool = True,
+    ) -> None:
+        self.url = url
+        self.snapshot_dir = Path(snapshot_dir)
+        self.slug = slug
+        self.wait_for_selector = wait_for_selector
+        self.wait_timeout_ms = wait_timeout_ms
+        self.headless = headless
+
+    def _render(self) -> str:
+        """Drive a headless browser and return the rendered HTML."""
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:
+            raise RuntimeError(
+                "PlaywrightJDSource requires the `submit` extras. "
+                "Run `pip install -e '.[submit]'` and `playwright install chromium`."
+            ) from exc
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=self.headless)
+            try:
+                context = browser.new_context()
+                page = context.new_page()
+                page.goto(self.url, wait_until="networkidle", timeout=self.wait_timeout_ms)
+                if self.wait_for_selector:
+                    page.wait_for_selector(
+                        self.wait_for_selector, timeout=self.wait_timeout_ms
+                    )
+                # Give late-loading content a beat to settle (Rippling, Greenhouse).
+                page.wait_for_timeout(500)
+                return page.content()
+            finally:
+                browser.close()
+
+    def fetch(self) -> tuple[str, JDMeta]:
+        html = self._render()
+        text = _clean_html_to_md(html)
+        h = _content_hash(text)
+        self.snapshot_dir.mkdir(parents=True, exist_ok=True)
+        snapshot_path = self.snapshot_dir / f"{self.slug}.{h}.md"
+        if not snapshot_path.exists():
+            snapshot_path.write_text(text, encoding="utf-8")
+
+        latest_marker = self.snapshot_dir / f"{self.slug}.LATEST"
+        prior_hash: str | None = None
+        if latest_marker.exists():
+            prior_hash = latest_marker.read_text(encoding="utf-8").strip() or None
+        drift = prior_hash is not None and prior_hash != h
+        latest_marker.write_text(h, encoding="utf-8")
+
+        return text, JDMeta(
+            url=self.url,
+            hash=h,
+            snapshot_path=str(snapshot_path),
+            drift=drift,
+        )

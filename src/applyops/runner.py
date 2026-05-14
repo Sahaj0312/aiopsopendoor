@@ -11,7 +11,12 @@ from pathlib import Path
 
 from applyops.agents.critic import CriticGate
 from applyops.agents.factchecker import FactCheckerAgent
-from applyops.agents.jd_source import FileJDSource, HttpJDSource, JDSource
+from applyops.agents.jd_source import (
+    FileJDSource,
+    HttpJDSource,
+    JDSource,
+    PlaywrightJDSource,
+)
 from applyops.agents.recruiter import OpenAIStructuredLLM, RecruiterAgent
 from applyops.agents.submitter import SubmitterAgent
 from applyops.agents.writer import WriterAgent
@@ -39,6 +44,8 @@ class RunConfig:
     critic_model: str
     factcheck_model: str
     max_rebases_per_gate: int
+    render_jd: bool = False
+    jd_wait_selector: str | None = None
 
 
 def build_jd_source(cfg: RunConfig) -> JDSource:
@@ -46,6 +53,13 @@ def build_jd_source(cfg: RunConfig) -> JDSource:
         return FileJDSource(cfg.jd_file)
     if cfg.jd_url is None:
         raise ValueError("either jd_url or jd_file is required")
+    if cfg.render_jd:
+        return PlaywrightJDSource(
+            cfg.jd_url,
+            snapshot_dir=cfg.snapshot_dir,
+            slug="jd.opendoor",
+            wait_for_selector=cfg.jd_wait_selector,
+        )
     return HttpJDSource(cfg.jd_url, snapshot_dir=cfg.snapshot_dir, slug="jd.opendoor")
 
 

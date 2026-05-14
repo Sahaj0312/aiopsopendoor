@@ -257,6 +257,20 @@ def run(
         "--max-rebases",
         help="Per-gate rebase budget before the run blocks.",
     ),
+    render_jd: bool = typer.Option(
+        False,
+        "--render-jd/--no-render-jd",
+        help=(
+            "Use a headless browser to fetch the JD. Required for JS-rendered ATS "
+            "pages (Rippling, Greenhouse, Lever). Needs the `submit` extras and "
+            "`playwright install chromium`."
+        ),
+    ),
+    jd_wait_selector: str = typer.Option(
+        None,
+        "--jd-wait-selector",
+        help="CSS selector to wait for after page load (rendered fetch only).",
+    ),
 ) -> None:
     """Run the full applyops pipeline end-to-end."""
     from applyops.runner import RunConfig, execute
@@ -281,6 +295,8 @@ def run(
         critic_model=critic_model,
         factcheck_model=factcheck_model,
         max_rebases_per_gate=max_rebases,
+        render_jd=render_jd,
+        jd_wait_selector=jd_wait_selector,
     )
 
     from applyops.obs import setup_tracing
