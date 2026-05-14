@@ -19,6 +19,7 @@ dependencies = [
     "tenacity>=8.3",
     "beautifulsoup4>=4.12",
     "markdownify>=0.13",
+    "pypdf>=4.3",
 ]
 
 [project.optional-dependencies]

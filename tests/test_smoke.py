@@ -16,3 +16,10 @@ def test_cli_version() -> None:
     result = CliRunner().invoke(app, ["version"])
     assert result.exit_code == 0
     assert __version__ in result.stdout
+
+
+def test_cli_facts_status_on_example_file() -> None:
+    result = CliRunner().invoke(app, ["facts", "status", "inputs/facts.example.json"])
+    assert result.exit_code == 0
+    assert "Ada Example" in result.stdout
+    assert "all facts attested" in result.stdout
