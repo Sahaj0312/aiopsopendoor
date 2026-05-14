@@ -326,6 +326,20 @@ def run(
         "--jd-wait-selector",
         help="CSS selector to wait for after page load (rendered fetch only).",
     ),
+    original_resume: Path = typer.Option(
+        None,
+        "--original-resume",
+        envvar="APPLYOPS_RESUME_PDF",
+        exists=True,
+        dir_okay=False,
+        readable=True,
+        help=(
+            "Path to your existing resume PDF to upload AS-IS. When set, the "
+            "form_plan's resume field points here instead of the AI-generated "
+            "cv.pdf (which still gets written to outputs/<run-id>/ for review). "
+            "The cover letter is still AI-tailored to the JD."
+        ),
+    ),
 ) -> None:
     """Run the full applyops pipeline end-to-end."""
     from applyops.runner import RunConfig, execute
@@ -352,6 +366,7 @@ def run(
         max_rebases_per_gate=max_rebases,
         render_jd=render_jd,
         jd_wait_selector=jd_wait_selector,
+        original_resume_path=original_resume,
     )
 
     from applyops.obs import setup_tracing

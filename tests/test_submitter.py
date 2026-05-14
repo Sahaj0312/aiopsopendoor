@@ -133,6 +133,7 @@ def test_submitter_writes_artifacts_to_run_output_dir(tmp_path: Path) -> None:
         candidate_phone="555-0100",
         candidate_links={"github": "https://github.com/example"},
         output_root=tmp_path,
+        render_pdf=False,  # don't launch Playwright in unit tests
     )
     out = submitter.run(ctx)
 
@@ -149,6 +150,55 @@ def test_submitter_writes_artifacts_to_run_output_dir(tmp_path: Path) -> None:
     field_names = {f["name"] for f in plan["fields"]}
     assert {"full_name", "email", "phone", "github", "cover_letter"} <= field_names
     assert "safe_to_submit: **True**" in audit
+
+
+def test_submitter_prefers_original_resume_when_provided(tmp_path: Path) -> None:
+    # Fake "original" resume on disk
+    original = tmp_path / "private" / "sahaj_resume.pdf"
+    original.parent.mkdir()
+    original.write_bytes(b"%PDF-1.4 fake original\n%%EOF\n")
+
+    ctx = _ctx_with(_writer_output(), _factcheck_clean(), _role_analysis())
+    submitter = SubmitterAgent(
+        candidate_name="Test Candidate",
+        candidate_email="test@example.com",
+        output_root=tmp_path / "out",
+        render_pdf=False,  # the test only cares about plan composition
+        original_resume_path=original,
+    )
+    out = submitter.run(ctx)
+    plan = json.loads(Path(out.form_plan_path).read_text(encoding="utf-8"))
+
+    resume_fields = [f for f in plan["fields"] if f["name"] == "resume"]
+    assert len(resume_fields) == 1
+    assert resume_fields[0]["value"] == str(original)
+    assert resume_fields[0]["source_artifact"] == "original_resume.pdf"
+    assert resume_fields[0]["kind"] == "file"
+
+    note_text = " ".join(plan["notes"])
+    assert "original PDF" in note_text
+
+
+def test_submitter_offers_cover_as_both_textarea_and_file(tmp_path: Path) -> None:
+    """The plan must include both a textarea and a file representation of the
+    cover letter so the submit-time LLM can pick whichever the form has."""
+    # Need PDF rendering for the file variant to appear, so use a stub.
+    ctx = _ctx_with(_writer_output(), _factcheck_clean(), _role_analysis())
+    submitter = SubmitterAgent(
+        candidate_name="X",
+        candidate_email="x@y.com",
+        output_root=tmp_path,
+        render_pdf=False,  # without PDF, only the textarea variant should appear
+    )
+    out = submitter.run(ctx)
+    plan = json.loads(Path(out.form_plan_path).read_text(encoding="utf-8"))
+    cover_fields = [f for f in plan["fields"] if f["name"].startswith("cover_letter")]
+    # With render_pdf=False, only the textarea variant is present.
+    assert {f["name"] for f in cover_fields} == {"cover_letter"}
+    # The textarea value carries the actual cover text, not a placeholder.
+    textarea = next(f for f in cover_fields if f["name"] == "cover_letter")
+    assert textarea["kind"] == "textarea"
+    assert "built with the same kind of system" in textarea["value"] or len(textarea["value"]) > 10
 
 
 def test_submitter_blocks_on_hard_flag(tmp_path: Path) -> None:

@@ -88,6 +88,7 @@ class SubmitterAgent:
         candidate_links: dict[str, str] | None = None,
         output_root: str | Path = "outputs",
         render_pdf: bool = True,
+        original_resume_path: str | Path | None = None,
     ) -> None:
         self.target_url = target_url
         self.candidate_name = candidate_name
@@ -96,6 +97,9 @@ class SubmitterAgent:
         self.candidate_links = dict(candidate_links or {})
         self.output_root = Path(output_root)
         self.render_pdf = render_pdf
+        self.original_resume_path = (
+            Path(original_resume_path) if original_resume_path else None
+        )
 
     def run(self, ctx: StackContext) -> SubmitterOutput:
         writer_output = ctx.output_of("writer")
@@ -128,9 +132,8 @@ class SubmitterAgent:
         cover_md = _render_cover_letter(
             self.candidate_name, self.candidate_email, writer_output.cover_letter
         )
+        cover_text = _render_cover_letter_text(writer_output.cover_letter)
         audit_md = _render_audit(factcheck)
-
-        plan = self._build_plan(writer_output, role_analysis, out_dir)
 
         cv_path = out_dir / "cv.md"
         cv_path.write_text(cv_md, encoding="utf-8")
@@ -138,8 +141,6 @@ class SubmitterAgent:
         cover_path.write_text(cover_md, encoding="utf-8")
         audit_path = out_dir / "audit.md"
         audit_path.write_text(audit_md, encoding="utf-8")
-        plan_path = out_dir / "form_plan.json"
-        plan_path.write_text(plan.model_dump_json(indent=2), encoding="utf-8")
 
         cv_pdf_path: Path | None = None
         cover_pdf_path: Path | None = None
@@ -159,14 +160,26 @@ class SubmitterAgent:
                 # Playwright not installed — markdown still written; PDF skipped.
                 ctx.run.note(f"pdf rendering skipped: {exc}")
 
-        # If a CV PDF was produced, it's what the form uploads — replace cv.md.
-        for field in plan.fields:
-            if field.kind == "file" and field.source_artifact == "cv.md" and cv_pdf_path:
-                field.value = str(cv_pdf_path)
-                field.source_artifact = "cv.pdf"
-        if cv_pdf_path and cv_pdf_path.exists():
-            plan.files_to_upload = [str(cv_pdf_path)]
-            plan_path.write_text(plan.model_dump_json(indent=2), encoding="utf-8")
+        # Pick the resume PDF to upload. Original takes precedence when set —
+        # the generated cv.pdf stays in outputs/ for review/comparison.
+        resume_upload_path: Path | None = None
+        resume_source = "cv.pdf"
+        if self.original_resume_path and self.original_resume_path.exists():
+            resume_upload_path = self.original_resume_path
+            resume_source = "original_resume.pdf"
+            ctx.run.note(f"using original resume for upload: {resume_upload_path}")
+        elif cv_pdf_path and cv_pdf_path.exists():
+            resume_upload_path = cv_pdf_path
+
+        plan = self._build_plan(
+            role_analysis=role_analysis,
+            resume_upload_path=resume_upload_path,
+            resume_source=resume_source,
+            cover_pdf_path=cover_pdf_path,
+            cover_text=cover_text,
+        )
+        plan_path = out_dir / "form_plan.json"
+        plan_path.write_text(plan.model_dump_json(indent=2), encoding="utf-8")
 
         return SubmitterOutput(
             layer_name=self.name,
@@ -181,9 +194,12 @@ class SubmitterAgent:
 
     def _build_plan(
         self,
-        writer_output: WriterOutput,
+        *,
         role_analysis: RoleAnalysis,
-        out_dir: Path,
+        resume_upload_path: Path | None,
+        resume_source: str,
+        cover_pdf_path: Path | None,
+        cover_text: str,
     ) -> FormFillPlan:
         fields: list[FormField] = [
             FormField(
@@ -221,15 +237,43 @@ class SubmitterAgent:
                     source_artifact="literal",
                 )
             )
+
+        # Resume file. Most ATSes have exactly one resume upload; the submit
+        # LLM will map this to it.
+        if resume_upload_path is not None:
+            fields.append(
+                FormField(
+                    name="resume",
+                    label="Resume",
+                    value=str(resume_upload_path),
+                    kind="file",
+                    source_artifact=resume_source,
+                )
+            )
+
+        # Cover letter — offered as BOTH textarea text and PDF file. The submit
+        # LLM picks whichever shape matches the actual form. Forms that only
+        # accept text will get cover_letter; forms that only accept files
+        # will get cover_letter_file. Forms with both can fill either (or both).
         fields.append(
             FormField(
                 name="cover_letter",
                 label="Cover letter",
-                value="(see cover.md)",
+                value=cover_text,
                 kind="textarea",
                 source_artifact="cover.md",
             )
         )
+        if cover_pdf_path is not None:
+            fields.append(
+                FormField(
+                    name="cover_letter_file",
+                    label="Cover letter (file)",
+                    value=str(cover_pdf_path),
+                    kind="file",
+                    source_artifact="cover.pdf",
+                )
+            )
 
         notes: list[str] = []
         if role_analysis.application_protocol_notes:
@@ -238,14 +282,30 @@ class SubmitterAgent:
                 + "; ".join(role_analysis.application_protocol_notes)
             )
         notes.append(
-            "HITL gate: review cv.md, cover.md, and audit.md before submitting. "
-            "No field below is auto-submitted."
+            "Resume upload: "
+            + (
+                f"original PDF at {resume_upload_path}"
+                if resume_source == "original_resume.pdf"
+                else f"AI-generated PDF at {resume_upload_path}"
+                if resume_upload_path
+                else "none — no resume PDF available"
+            )
         )
+        notes.append(
+            "HITL gate: review cv.md, cover.md, and audit.md before submitting. "
+            "The applyops submit command pauses for explicit human confirmation."
+        )
+
+        files_to_upload: list[str] = []
+        if resume_upload_path:
+            files_to_upload.append(str(resume_upload_path))
+        if cover_pdf_path:
+            files_to_upload.append(str(cover_pdf_path))
 
         return FormFillPlan(
             target_url=role_analysis.jd_meta.url or self.target_url,
             fields=fields,
-            files_to_upload=[str(out_dir / "cv.md")],
+            files_to_upload=files_to_upload,
             notes=notes,
         )
 
@@ -301,6 +361,12 @@ def _render_cover_letter(name: str, email: str, cover: CoverLetter) -> str:
         lines.append(para.text)
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _render_cover_letter_text(cover: CoverLetter) -> str:
+    """Plain paragraph-separated text suitable for pasting into a textarea."""
+    paras = [para.text.strip() for para in cover.paragraphs if para.text.strip()]
+    return "\n\n".join(paras)
 
 
 def _render_audit(factcheck: FactCheckOutput) -> str:

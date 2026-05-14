@@ -46,6 +46,7 @@ class RunConfig:
     max_rebases_per_gate: int
     render_jd: bool = False
     jd_wait_selector: str | None = None
+    original_resume_path: Path | None = None
 
 
 def build_jd_source(cfg: RunConfig) -> JDSource:
@@ -84,6 +85,7 @@ def build_stack(cfg: RunConfig, candidate: Candidate) -> Stack:
         candidate_phone=cfg.candidate_phone,
         candidate_links={k: str(v) for k, v in candidate.links.items()},
         output_root=cfg.output_root,
+        original_resume_path=cfg.original_resume_path,
     )
 
     return Stack(

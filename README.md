@@ -85,9 +85,13 @@ applyops facts parse inputs/private/sahaj_resume.pdf   # PDF → facts.local.jso
 applyops facts status            # eyeball facts; flip provenance.verified_by to "self"
 
 # pipeline run: fetch JD, draft, critique, factcheck, render artifacts (no submission)
+# --original-resume uploads your existing PDF as the resume; the AI-tailored
+# cv.pdf still gets generated under outputs/<run-id>/ for review/comparison.
+# The cover letter is always AI-generated to address the JD.
 applyops run \
     --jd-url https://ats.rippling.com/en-CA/opendoor/ \
     --render-jd \
+    --original-resume inputs/private/sahaj_resume.pdf \
     --email sahajchhabra03@gmail.com
 
 # outputs/<run-id>/ now has: cv.md, cv.pdf, cover.md, cover.pdf, audit.md, form_plan.json
