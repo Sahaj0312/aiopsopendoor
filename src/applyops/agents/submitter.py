@@ -65,7 +65,9 @@ class SubmitterOutput(LayerOutput):
     """Everything written to outputs/<run-id>/ for human review."""
 
     cv_md_path: str
+    cv_pdf_path: str | None = None
     cover_md_path: str
+    cover_pdf_path: str | None = None
     form_plan_path: str
     audit_md_path: str
     output_dir: str
@@ -85,6 +87,7 @@ class SubmitterAgent:
         candidate_phone: str | None = None,
         candidate_links: dict[str, str] | None = None,
         output_root: str | Path = "outputs",
+        render_pdf: bool = True,
     ) -> None:
         self.target_url = target_url
         self.candidate_name = candidate_name
@@ -92,6 +95,7 @@ class SubmitterAgent:
         self.candidate_phone = candidate_phone
         self.candidate_links = dict(candidate_links or {})
         self.output_root = Path(output_root)
+        self.render_pdf = render_pdf
 
     def run(self, ctx: StackContext) -> SubmitterOutput:
         writer_output = ctx.output_of("writer")
@@ -137,10 +141,39 @@ class SubmitterAgent:
         plan_path = out_dir / "form_plan.json"
         plan_path.write_text(plan.model_dump_json(indent=2), encoding="utf-8")
 
+        cv_pdf_path: Path | None = None
+        cover_pdf_path: Path | None = None
+        if self.render_pdf:
+            try:
+                from applyops.render import markdown_to_pdf
+
+                cv_pdf_path = markdown_to_pdf(
+                    cv_md, out_dir / "cv.pdf", title=f"{self.candidate_name} — CV"
+                )
+                cover_pdf_path = markdown_to_pdf(
+                    cover_md,
+                    out_dir / "cover.pdf",
+                    title=f"{self.candidate_name} — Cover Letter",
+                )
+            except RuntimeError as exc:
+                # Playwright not installed — markdown still written; PDF skipped.
+                ctx.run.note(f"pdf rendering skipped: {exc}")
+
+        # If a CV PDF was produced, it's what the form uploads — replace cv.md.
+        for field in plan.fields:
+            if field.kind == "file" and field.source_artifact == "cv.md" and cv_pdf_path:
+                field.value = str(cv_pdf_path)
+                field.source_artifact = "cv.pdf"
+        if cv_pdf_path and cv_pdf_path.exists():
+            plan.files_to_upload = [str(cv_pdf_path)]
+            plan_path.write_text(plan.model_dump_json(indent=2), encoding="utf-8")
+
         return SubmitterOutput(
             layer_name=self.name,
             cv_md_path=str(cv_path),
+            cv_pdf_path=str(cv_pdf_path) if cv_pdf_path else None,
             cover_md_path=str(cover_path),
+            cover_pdf_path=str(cover_pdf_path) if cover_pdf_path else None,
             form_plan_path=str(plan_path),
             audit_md_path=str(audit_path),
             output_dir=str(out_dir),
