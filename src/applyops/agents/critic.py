@@ -169,10 +169,7 @@ class CriticGate:
             for entry in entries
             for claim in entry.bullets
         ]
-        if cv_bullets:
-            density = sum(1 for c in cv_bullets if c.fact_ids) / len(cv_bullets)
-        else:
-            density = 1.0
+        density = sum(1 for c in cv_bullets if c.fact_ids) / len(cv_bullets) if cv_bullets else 1.0
 
         # Most-cited fact concentration.
         fact_citation_counts: dict[str, int] = {}
@@ -214,7 +211,9 @@ class CriticGate:
         user = json.dumps(
             {
                 "role_analysis": role_analysis.model_dump(mode="json", exclude={"raw_jd_excerpt"}),
-                "writer_output": output.model_dump(mode="json", exclude={"layer_name", "produced_at"}),
+                "writer_output": output.model_dump(
+                    mode="json", exclude={"layer_name", "produced_at"}
+                ),
                 "deterministic_findings": deterministic.model_dump(mode="json"),
             },
             indent=2,
@@ -251,9 +250,7 @@ class CriticGate:
         # Compose findings from both sources.
         combined_findings: list[str] = list(deterministic.notes) + list(payload.findings)
         if payload.tone_findings:
-            combined_findings.append(
-                "tone: " + "; ".join(payload.tone_findings)
-            )
+            combined_findings.append("tone: " + "; ".join(payload.tone_findings))
         if payload.protocol_response == "missing":
             combined_findings.append(
                 "application protocol notes were not addressed in the cover letter"

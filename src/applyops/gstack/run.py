@@ -3,22 +3,22 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _new_run_id() -> str:
     return f"run_{_now().strftime('%Y%m%dT%H%M%SZ')}_{uuid.uuid4().hex[:6]}"
 
 
-class RunStatus(str, Enum):
+class RunStatus(StrEnum):
     """Lifecycle states of a Run."""
 
     RUNNING = "running"
@@ -41,7 +41,9 @@ class Run(BaseModel):
     error: str | None = None
     notes: list[str] = Field(default_factory=list)
 
-    def mark(self, status: RunStatus, *, blocked_on: str | None = None, error: str | None = None) -> None:
+    def mark(
+        self, status: RunStatus, *, blocked_on: str | None = None, error: str | None = None
+    ) -> None:
         self.status = status
         self.ended_at = _now()
         if blocked_on is not None:

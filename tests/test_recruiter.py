@@ -72,7 +72,7 @@ def test_recruiter_calls_llm_with_jd_text_and_strict_schema() -> None:
     agent = RecruiterAgent(FileJDSource(FIXTURE), llm=llm, model="test-model")
     stack = Stack(layers=[agent])
 
-    run, ctx = stack.land()
+    run, _ctx = stack.land()
 
     assert run.status == RunStatus.COMPLETED
     assert len(llm.calls) == 1

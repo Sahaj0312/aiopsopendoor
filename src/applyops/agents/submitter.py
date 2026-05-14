@@ -20,7 +20,6 @@ negotiable; the only path forward is fixing the issue upstream.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -232,7 +231,9 @@ def _render_cv(name: str, links: dict[str, str], cv: CVDraft) -> str:
     if cv.experience:
         lines.extend(["## Experience", ""])
         for entry in cv.experience:
-            lines.append(f"**{entry.heading}**" + (f" — {entry.date_range}" if entry.date_range else ""))
+            lines.append(
+                f"**{entry.heading}**" + (f" — {entry.date_range}" if entry.date_range else "")
+            )
             for bullet in entry.bullets:
                 lines.append(f"- {bullet.text}")
             lines.append("")
@@ -240,7 +241,9 @@ def _render_cv(name: str, links: dict[str, str], cv: CVDraft) -> str:
     if cv.projects:
         lines.extend(["## Projects", ""])
         for entry in cv.projects:
-            lines.append(f"**{entry.heading}**" + (f" — {entry.date_range}" if entry.date_range else ""))
+            lines.append(
+                f"**{entry.heading}**" + (f" — {entry.date_range}" if entry.date_range else "")
+            )
             for bullet in entry.bullets:
                 lines.append(f"- {bullet.text}")
             lines.append("")
@@ -251,7 +254,9 @@ def _render_cv(name: str, links: dict[str, str], cv: CVDraft) -> str:
     if cv.education:
         lines.extend(["## Education", ""])
         for entry in cv.education:
-            lines.append(f"**{entry.heading}**" + (f" — {entry.date_range}" if entry.date_range else ""))
+            lines.append(
+                f"**{entry.heading}**" + (f" — {entry.date_range}" if entry.date_range else "")
+            )
             lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"

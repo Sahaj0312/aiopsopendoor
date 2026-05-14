@@ -58,7 +58,16 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
-ignore = ["E501"]
+# E501: handled by formatter, not the linter.
+# RUF001-003: typographic dashes / multiplication signs are intentional in
+#   resume + cover-letter text and fixture data; flagging them is noise here.
+ignore = ["E501", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+# Typer requires Argument/Option as defaults — that's the documented idiom.
+"src/applyops/cli.py" = ["B008"]
+# Test files use unused imports for monkeypatching and fixtures.
+"tests/**/*.py" = ["F401"]
 
 [tool.mypy]
 python_version = "3.11"

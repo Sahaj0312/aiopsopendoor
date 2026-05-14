@@ -152,9 +152,7 @@ def test_submitter_writes_artifacts_to_run_output_dir(tmp_path: Path) -> None:
 
 
 def test_submitter_blocks_on_hard_flag(tmp_path: Path) -> None:
-    ctx = _ctx_with(
-        _writer_output(), _factcheck_with_hard_flag(), _role_analysis()
-    )
+    ctx = _ctx_with(_writer_output(), _factcheck_with_hard_flag(), _role_analysis())
     submitter = SubmitterAgent(
         candidate_name="Test Candidate",
         candidate_email="test@example.com",
@@ -167,9 +165,7 @@ def test_submitter_blocks_on_hard_flag(tmp_path: Path) -> None:
 
 
 def test_submitter_records_block_on_run_notes(tmp_path: Path) -> None:
-    ctx = _ctx_with(
-        _writer_output(), _factcheck_with_hard_flag(), _role_analysis()
-    )
+    ctx = _ctx_with(_writer_output(), _factcheck_with_hard_flag(), _role_analysis())
     submitter = SubmitterAgent(
         candidate_name="Test",
         candidate_email="t@example.com",

@@ -50,9 +50,7 @@ class ScriptedLLM:
     ) -> BaseModel:
         queue = self.script.get(schema)
         if not queue:
-            raise AssertionError(
-                f"no scripted payload remaining for schema {schema.__name__}"
-            )
+            raise AssertionError(f"no scripted payload remaining for schema {schema.__name__}")
         return queue.pop(0)
 
 
@@ -162,8 +160,7 @@ def _scripted_run_payloads() -> dict[type[BaseModel], list[BaseModel]]:
     # 4 grounded claims total (1 summary + 2 bullets + 1 cover paragraph)
     factcheck = _FactCheckPayload(
         audits=[
-            _ClaimAuditPayload(claim_index=i, verdict="grounded", rationale="ok")
-            for i in range(4)
+            _ClaimAuditPayload(claim_index=i, verdict="grounded", rationale="ok") for i in range(4)
         ]
     )
 
@@ -226,8 +223,8 @@ def test_full_pipeline_runs_and_writes_artifacts(tmp_path: Path) -> None:
 
 def test_runner_build_jd_source_picks_right_implementation(tmp_path: Path) -> None:
     """The runner's tiny picker function — keep it honest."""
-    from applyops.runner import RunConfig, build_jd_source
     from applyops.agents.jd_source import FileJDSource, HttpJDSource
+    from applyops.runner import build_jd_source
 
     jd_file = tmp_path / "jd.md"
     jd_file.write_text("# fake jd\n")

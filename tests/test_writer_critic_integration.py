@@ -27,7 +27,6 @@ from applyops.agents import (
     CVEntry,
     GroundedClaim,
     RecruiterAgent,
-    RoleAnalysis,
     WriterAgent,
     WriterOutput,
 )
@@ -62,9 +61,7 @@ class ScriptedLLM:
         self.calls.append(schema)
         queue = self.script.get(schema)
         if not queue:
-            raise AssertionError(
-                f"no scripted payload remaining for schema {schema.__name__}"
-            )
+            raise AssertionError(f"no scripted payload remaining for schema {schema.__name__}")
         return queue.pop(0)
 
 

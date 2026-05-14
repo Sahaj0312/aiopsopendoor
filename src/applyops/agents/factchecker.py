@@ -219,8 +219,7 @@ class FactCheckerAgent:
                         claim_text=claim.text,
                         cited_fact_ids=[fid],
                         explanation=(
-                            f"fact_id {fid!r} is not yet attested "
-                            f"(verified_by != self/third_party)"
+                            f"fact_id {fid!r} is not yet attested (verified_by != self/third_party)"
                         ),
                         suggested_fix="attest the fact in facts.json or replace the citation",
                     )
@@ -229,9 +228,7 @@ class FactCheckerAgent:
         # Metric check: every numeric token in the claim must trace to some cited fact.
         claim_metrics = _extract_metrics(claim.text)
         for metric in claim_metrics:
-            if not any(
-                _metric_supported(metric, f.metrics, f.detail) for f in cited_facts
-            ):
+            if not any(_metric_supported(metric, f.metrics, f.detail) for f in cited_facts):
                 flags.append(
                     Flag(
                         severity="soft",

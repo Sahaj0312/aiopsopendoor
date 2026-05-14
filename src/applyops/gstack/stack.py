@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from applyops.gstack.context import LayerState, StackContext
 from applyops.gstack.protocols import Layer, ReviewGate
 from applyops.gstack.run import Run, RunStatus
+from applyops.obs import tracer
 
 
 class StackBlocked(RuntimeError):
@@ -55,28 +56,44 @@ class Stack:
         """
         run = Run()
         ctx = StackContext(run=run, inputs=dict(inputs or {}))
-        for layer in self.layers:
-            ctx.layers[layer.name] = LayerState(name=layer.name)
-            self._run_layer_with_gate(layer, ctx)
-            if run.status == RunStatus.BLOCKED:
-                return run, ctx
-            if up_to is not None and layer.name == up_to:
-                run.mark(RunStatus.PARTIAL)
-                return run, ctx
-        run.mark(RunStatus.COMPLETED)
-        return run, ctx
+        with tracer().start_as_current_span("stack.land") as root_span:
+            root_span.set_attribute("run.id", run.id)
+            root_span.set_attribute("stack.layers", ",".join(la.name for la in self.layers))
+            root_span.set_attribute("stack.gates", ",".join(self.gates.keys()))
+            for layer in self.layers:
+                ctx.layers[layer.name] = LayerState(name=layer.name)
+                self._run_layer_with_gate(layer, ctx)
+                if run.status == RunStatus.BLOCKED:
+                    root_span.set_attribute("run.status", run.status.value)
+                    return run, ctx
+                if up_to is not None and layer.name == up_to:
+                    run.mark(RunStatus.PARTIAL)
+                    root_span.set_attribute("run.status", run.status.value)
+                    return run, ctx
+            run.mark(RunStatus.COMPLETED)
+            root_span.set_attribute("run.status", run.status.value)
+            return run, ctx
 
     def _run_layer_with_gate(self, layer: Layer, ctx: StackContext) -> None:
         state = ctx.layers[layer.name]
         gate = self.gates.get(layer.name)
-        output = layer.run(ctx)
-        state.output = output
+        with tracer().start_as_current_span(f"layer.{layer.name}") as span:
+            span.set_attribute("layer.name", layer.name)
+            output = layer.run(ctx)
+            state.output = output
 
         if gate is None:
             return
 
         while True:
-            review = gate.review(output, ctx)
+            with tracer().start_as_current_span(f"gate.{gate.name}") as gate_span:
+                gate_span.set_attribute("gate.name", gate.name)
+                gate_span.set_attribute("gate.target_layer", layer.name)
+                gate_span.set_attribute("gate.rebase_iteration", state.rebases)
+                review = gate.review(output, ctx)
+                gate_span.set_attribute("gate.passed", review.passed)
+                if review.score is not None:
+                    gate_span.set_attribute("gate.score", review.score)
             state.gate_reviews.append(review)
             if review.passed:
                 state.pending_rebase = None
@@ -90,5 +107,8 @@ class Stack:
             assert review.rebase_request is not None  # invariant from Review
             state.pending_rebase = review.rebase_request
             state.rebases += 1
-            output = layer.run(ctx)
-            state.output = output
+            with tracer().start_as_current_span(f"layer.{layer.name}.rebase") as rebase_span:
+                rebase_span.set_attribute("layer.name", layer.name)
+                rebase_span.set_attribute("rebase.iteration", state.rebases)
+                output = layer.run(ctx)
+                state.output = output

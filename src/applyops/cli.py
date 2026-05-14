@@ -148,7 +148,9 @@ def eval_cmd(
                 needs=["writer_output", "role_analysis"],
             ),
             RubricMetric(name="grounding_density", scorer=grounding_density, threshold=1.0),
-            RubricMetric(name="fact_concentration", scorer=fact_concentration, threshold=4, direction="<="),
+            RubricMetric(
+                name="fact_concentration", scorer=fact_concentration, threshold=4, direction="<="
+            ),
             RubricMetric(name="tone_drift", scorer=tone_drift_count, threshold=0, direction="<="),
             RubricMetric(
                 name="protocol_addressed",
@@ -159,11 +161,7 @@ def eval_cmd(
         ],
     )
 
-    cases = (
-        ["good", "bad_coverage", "overconcentrated"]
-        if case == "all"
-        else [case]
-    )
+    cases = ["good", "bad_coverage", "overconcentrated"] if case == "all" else [case]
     role = load_fixture("role_analysis.opendoor.json", RoleAnalysis)
 
     overall_passed = True
@@ -265,8 +263,7 @@ def run(
 
     if jd_url is None and jd_file is None:
         console.print(
-            "[red]error[/red]: provide --jd-url or --jd-file "
-            "(or set APPLYOPS_JD_URL in .env)"
+            "[red]error[/red]: provide --jd-url or --jd-file (or set APPLYOPS_JD_URL in .env)"
         )
         raise typer.Exit(code=2)
 
@@ -286,10 +283,18 @@ def run(
         max_rebases_per_gate=max_rebases,
     )
 
+    from applyops.obs import setup_tracing
+
+    tracing_active = setup_tracing()
     console.print("[bold]applyops[/bold] running…")
-    console.print(f"  facts: {facts}")
-    console.print(f"  jd:    {jd_url or jd_file}")
-    console.print(f"  out:   {output_root}/")
+    console.print(f"  facts:   {facts}")
+    console.print(f"  jd:      {jd_url or jd_file}")
+    console.print(f"  out:     {output_root}/")
+    console.print(
+        f"  tracing: [{'green' if tracing_active else 'yellow'}]"
+        f"{'active (Langfuse)' if tracing_active else 'disabled (no LANGFUSE_* keys)'}"
+        f"[/{'green' if tracing_active else 'yellow'}]"
+    )
     console.print()
 
     run_record, ctx = execute(cfg)

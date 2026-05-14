@@ -117,9 +117,7 @@ def test_write_draft_round_trips(tmp_path: Path) -> None:
                     "kind": "skill",
                     "title": "Python",
                     "detail": "I know Python.",
-                    "provenance": [
-                        {"source": "resume.pdf p.1", "verified_by": "self"}
-                    ],
+                    "provenance": [{"source": "resume.pdf p.1", "verified_by": "self"}],
                 }
             ],
         }

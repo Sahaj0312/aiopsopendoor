@@ -19,13 +19,12 @@ from applyops.agents.factchecker import (
     FactCheckerAgent,
     FactCheckOutput,
     _ClaimAuditPayload,
-    _FactCheckPayload,
     _extract_metrics,
+    _FactCheckPayload,
 )
 from applyops.agents.writer import (
     CoverLetter,
     CVDraft,
-    CVEntry,
     GroundedClaim,
     WriterOutput,
 )
@@ -83,9 +82,7 @@ def _writer_output(claims: list[GroundedClaim]) -> WriterOutput:
     return WriterOutput(
         layer_name="writer",
         cv=CVDraft(
-            summary=claims[0] if claims else GroundedClaim(
-                text="x", fact_ids=["exp-verified"]
-            ),
+            summary=claims[0] if claims else GroundedClaim(text="x", fact_ids=["exp-verified"]),
             experience=[],
             projects=[],
             skills_line="",
@@ -107,8 +104,7 @@ def _ctx_with(writer_output: WriterOutput) -> StackContext:
 def _all_grounded_payload(n: int) -> _FactCheckPayload:
     return _FactCheckPayload(
         audits=[
-            _ClaimAuditPayload(claim_index=i, verdict="grounded", rationale="ok")
-            for i in range(n)
+            _ClaimAuditPayload(claim_index=i, verdict="grounded", rationale="ok") for i in range(n)
         ]
     )
 

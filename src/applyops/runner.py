@@ -15,7 +15,8 @@ from applyops.agents.jd_source import FileJDSource, HttpJDSource, JDSource
 from applyops.agents.recruiter import OpenAIStructuredLLM, RecruiterAgent
 from applyops.agents.submitter import SubmitterAgent
 from applyops.agents.writer import WriterAgent
-from applyops.facts import Candidate, load as load_candidate
+from applyops.facts import Candidate
+from applyops.facts import load as load_candidate
 from applyops.gstack import Stack
 from applyops.gstack.context import StackContext
 from applyops.gstack.run import Run
@@ -61,9 +62,7 @@ def build_stack(cfg: RunConfig, candidate: Candidate) -> Stack:
     )
     writer = WriterAgent(candidate=candidate, llm=llm, model=cfg.writer_model)
     critic = CriticGate(llm=llm, model=cfg.critic_model)
-    factchecker = FactCheckerAgent(
-        candidate=candidate, llm=llm, model=cfg.factcheck_model
-    )
+    factchecker = FactCheckerAgent(candidate=candidate, llm=llm, model=cfg.factcheck_model)
     submitter = SubmitterAgent(
         target_url=cfg.target_url_override,
         candidate_name=candidate.name,

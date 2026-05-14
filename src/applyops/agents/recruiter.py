@@ -102,18 +102,30 @@ class OpenAIStructuredLLM:
         user: str,
         schema: type[BaseModel],
     ) -> BaseModel:
-        completion = self.client.chat.completions.parse(
-            model=model,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            response_format=schema,
-        )
-        parsed = completion.choices[0].message.parsed
-        if parsed is None:
-            raise RuntimeError("LLM returned no parsed output (refusal or schema mismatch)")
-        return parsed
+        from applyops.obs import tracer
+
+        with tracer().start_as_current_span("llm.parse") as span:
+            span.set_attribute("llm.provider", "openai")
+            span.set_attribute("llm.model", model)
+            span.set_attribute("llm.schema", schema.__name__)
+            span.set_attribute("llm.input.system_chars", len(system))
+            span.set_attribute("llm.input.user_chars", len(user))
+            completion = self.client.chat.completions.parse(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                response_format=schema,
+            )
+            if completion.usage is not None:
+                span.set_attribute("llm.usage.input_tokens", completion.usage.prompt_tokens)
+                span.set_attribute("llm.usage.output_tokens", completion.usage.completion_tokens)
+                span.set_attribute("llm.usage.total_tokens", completion.usage.total_tokens)
+            parsed = completion.choices[0].message.parsed
+            if parsed is None:
+                raise RuntimeError("LLM returned no parsed output (refusal or schema mismatch)")
+            return parsed
 
 
 class RecruiterAgent:
