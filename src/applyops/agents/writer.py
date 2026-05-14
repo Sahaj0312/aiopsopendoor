@@ -61,7 +61,7 @@ Hard rules:
 
 8. `education` entries should each cite the relevant education fact.
 
-9. Tone: confident but not boastful. Specific, concrete, evidence-led. Avoid stock phrases ("results-driven", "passionate about technology"). The reader is a senior AI Ops engineer who can smell filler.
+9. Tone: confident but not boastful. Specific, concrete, evidence-led. Forbidden phrases (the critic will reject the draft if any appear): "excited to apply", "eager to bring", "passionate about", "results-driven", "driven by rapid iteration", "focus on impact", "leveraging cutting-edge", "cross-disciplinary expertise", "world-class", "best-in-class", "synergy". Prefer "I shipped X to do Y" over "I'm excited to leverage my X expertise". Cut any opening sentence that doesn't say a concrete thing in its first eight words. The reader is a senior AI Ops engineer who can smell filler from a paragraph away.
 
 10. If a rebase_request is provided, treat its findings as binding: each finding is something you got wrong on the prior draft and must fix. Suggested_changes are advisory; you may diverge if you have a better solution that addresses the same finding.
 

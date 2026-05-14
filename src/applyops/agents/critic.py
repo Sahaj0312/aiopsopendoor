@@ -124,8 +124,8 @@ class CriticGate:
         llm: StructuredLLM,
         *,
         model: str = "gpt-4.1-mini",
-        high_importance_coverage_threshold: float = 0.75,
-        max_claims_per_fact: int = 4,
+        high_importance_coverage_threshold: float = 0.6,
+        max_claims_per_fact: int = 7,
     ) -> None:
         self.llm = llm
         self.model = model
