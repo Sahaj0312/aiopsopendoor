@@ -80,7 +80,10 @@ disallow_untyped_defs = true
 files = ["src/applyops"]
 
 [[tool.mypy.overrides]]
-module = ["langfuse.*", "opentelemetry.*"]
+# These extras are optional. CI runs mypy without the `[submit]` and `[obs]`
+# extras installed, so their stubs aren't present. The runtime code paths
+# that touch them are guarded behind try/except ImportError already.
+module = ["langfuse.*", "opentelemetry.*", "playwright.*", "markdownify"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

@@ -178,7 +178,10 @@ class PlaywrightJDSource:
                     page.wait_for_selector(self.wait_for_selector, timeout=self.wait_timeout_ms)
                 # Give late-loading content a beat to settle (Rippling, Greenhouse).
                 page.wait_for_timeout(500)
-                return page.content()
+                # `page.content()` returns Any when playwright stubs aren't
+                # installed (the optional [submit] extras). Cast for mypy.
+                content: str = page.content()
+                return content
             finally:
                 browser.close()
 
