@@ -16,6 +16,11 @@ app = typer.Typer(
 console = Console()
 
 
+@app.callback()
+def _main() -> None:
+    """applyops — application as production AI Ops."""
+
+
 @app.command()
 def version() -> None:
     """Print version."""
