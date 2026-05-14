@@ -1,0 +1,62 @@
+{
+  "layer_name": "writer",
+  "produced_at": "2026-05-13T19:30:00Z",
+  "cv": {
+    "summary": {
+      "text": "Engineer shipping production AI pipelines.",
+      "fact_ids": ["exp-quickplay-2025-swe"],
+      "addresses": ["Production experience shipping LLM or ML systems"]
+    },
+    "experience": [
+      {
+        "heading": "Software Engineer, Quickplay — Toronto",
+        "date_range": "2025 – present",
+        "primary_fact_id": "exp-quickplay-2025-swe",
+        "bullets": [
+          {
+            "text": "Built AI thumbnail pipeline.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Production experience shipping LLM or ML systems"]
+          },
+          {
+            "text": "Built verticalization API.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Production experience shipping LLM or ML systems"]
+          },
+          {
+            "text": "Built Go microservices.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Comfort with Go or another systems language"]
+          },
+          {
+            "text": "Built distributed HLS encoding.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": []
+          },
+          {
+            "text": "Worked on observability.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Observability or evals tooling familiarity"]
+          },
+          {
+            "text": "Owned production AI infra.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Strong Python"]
+          }
+        ]
+      }
+    ],
+    "projects": [],
+    "skills_line": "Python, Go",
+    "education": []
+  },
+  "cover_letter": {
+    "paragraphs": [
+      {
+        "text": "I want this role.",
+        "fact_ids": ["exp-quickplay-2025-swe"],
+        "addresses": []
+      }
+    ]
+  }
+}

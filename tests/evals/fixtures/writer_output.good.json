@@ -1,0 +1,79 @@
+{
+  "layer_name": "writer",
+  "produced_at": "2026-05-13T19:30:00Z",
+  "cv": {
+    "summary": {
+      "text": "Engineer shipping production AI on video and image pipelines.",
+      "fact_ids": ["exp-quickplay-2025-swe"],
+      "addresses": ["Production experience shipping LLM or ML systems", "Strong Python"]
+    },
+    "experience": [
+      {
+        "heading": "Software Engineer, Quickplay — Toronto",
+        "date_range": "2025 – present",
+        "primary_fact_id": "exp-quickplay-2025-swe",
+        "bullets": [
+          {
+            "text": "Shipped a production CV + LLM thumbnail pipeline for the AMG CMS at scale.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Production experience shipping LLM or ML systems"]
+          },
+          {
+            "text": "Designed and shipped a YOLO-based verticalization API to production.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": ["Production experience shipping LLM or ML systems"]
+          }
+        ]
+      },
+      {
+        "heading": "Software Engineer Intern, Quickplay — Toronto",
+        "date_range": "Summer 2024",
+        "primary_fact_id": "exp-quickplay-2024-intern",
+        "bullets": [
+          {
+            "text": "Owned a testing-discipline push that raised SonarQube coverage from 14% to 97% across multiple microservices.",
+            "fact_ids": ["exp-quickplay-2024-intern"],
+            "addresses": ["Observability or evals tooling familiarity"]
+          }
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "heading": "InvestorAI",
+        "date_range": "",
+        "primary_fact_id": "proj-investorai",
+        "bullets": [
+          {
+            "text": "Built embedding pipelines with pgvector for context-aware retrieval (RAG), deployed to AKS.",
+            "fact_ids": ["proj-investorai"],
+            "addresses": ["Strong Python"]
+          }
+        ]
+      }
+    ],
+    "skills_line": "Python, Go, LLMs, RAG, computer vision, observability tooling",
+    "education": [
+      {
+        "heading": "Bachelor of Commerce, Combined Major in Computer Science — UBC",
+        "date_range": "2019 – 2024",
+        "primary_fact_id": "edu-ubc-bcom-cs",
+        "bullets": []
+      }
+    ]
+  },
+  "cover_letter": {
+    "paragraphs": [
+      {
+        "text": "I'm applying to Opendoor's AI Ops role because the work fits what I already ship at Quickplay: production AI pipelines on video at scale, and a discipline around testing and reliability.",
+        "fact_ids": ["exp-quickplay-2025-swe"],
+        "addresses": ["Production experience shipping LLM or ML systems"]
+      },
+      {
+        "text": "I built this application package using a small AI Ops system I wrote for it — a stacked agent pipeline with rubric evals, claim grounding against a hand-attested facts file, and a human-in-the-loop submitter. The RAG side draws on the InvestorAI work; the rest is new for this project. This is how I used AI in the application, end-to-end.",
+        "fact_ids": ["proj-investorai", "skill-ml-ai"],
+        "addresses": []
+      }
+    ]
+  }
+}

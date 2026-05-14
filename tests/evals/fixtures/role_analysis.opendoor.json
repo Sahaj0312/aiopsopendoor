@@ -1,0 +1,52 @@
+{
+  "layer_name": "recruiter",
+  "produced_at": "2026-05-13T19:00:00Z",
+  "role_title": "AI Ops Engineer",
+  "company": "Opendoor",
+  "location": "Toronto, ON",
+  "jd_meta": {
+    "url": "https://ats.rippling.com/en-CA/opendoor/",
+    "hash": "fixturehash01",
+    "snapshot_path": "tests/evals/fixtures/jd.snapshot.md",
+    "drift": false
+  },
+  "requirements": [
+    {
+      "text": "Production experience shipping LLM or ML systems",
+      "kind": "must_have",
+      "importance": 5,
+      "category": "experience",
+      "evidence_anchor": "shipped LLM or ML systems in production"
+    },
+    {
+      "text": "Strong Python",
+      "kind": "must_have",
+      "importance": 5,
+      "category": "technical",
+      "evidence_anchor": "production Python experience"
+    },
+    {
+      "text": "Observability or evals tooling familiarity",
+      "kind": "must_have",
+      "importance": 4,
+      "category": "operational",
+      "evidence_anchor": "experience with eval harnesses or tracing"
+    },
+    {
+      "text": "Comfort with Go or another systems language",
+      "kind": "nice_to_have",
+      "importance": 3,
+      "category": "technical",
+      "evidence_anchor": "Go or systems-language experience"
+    }
+  ],
+  "company_signals": [
+    "Engineering culture values reliability and AI safety",
+    "Toronto-based AI team"
+  ],
+  "application_protocol_notes": [
+    "apply using AI",
+    "explain how you used AI in the application"
+  ],
+  "raw_jd_excerpt": "AI Ops Engineer. Toronto. We're hiring..."
+}

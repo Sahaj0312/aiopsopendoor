@@ -1,0 +1,37 @@
+{
+  "layer_name": "writer",
+  "produced_at": "2026-05-13T19:30:00Z",
+  "cv": {
+    "summary": {
+      "text": "A results-driven engineer passionate about technology, leveraging cutting-edge AI to drive impact.",
+      "fact_ids": ["exp-quickplay-2025-swe"],
+      "addresses": []
+    },
+    "experience": [
+      {
+        "heading": "Software Engineer, Quickplay — Toronto",
+        "date_range": "2025 – present",
+        "primary_fact_id": "exp-quickplay-2025-swe",
+        "bullets": [
+          {
+            "text": "Worked at Quickplay.",
+            "fact_ids": ["exp-quickplay-2025-swe"],
+            "addresses": []
+          }
+        ]
+      }
+    ],
+    "projects": [],
+    "skills_line": "Python",
+    "education": []
+  },
+  "cover_letter": {
+    "paragraphs": [
+      {
+        "text": "I am a 10x engineer and rockstar best-in-class thought leader.",
+        "fact_ids": ["exp-quickplay-2025-swe"],
+        "addresses": []
+      }
+    ]
+  }
+}

@@ -115,6 +115,81 @@ def facts_status(
         )
 
 
+@app.command(name="eval")
+def eval_cmd(
+    case: str = typer.Option(
+        "all",
+        "--case",
+        help="Which fixture to grade: good | bad_coverage | overconcentrated | all.",
+    ),
+) -> None:
+    """Run the writer rubric against fixture cases and print scorecards."""
+    from applyops.agents.recruiter import RoleAnalysis
+    from applyops.agents.writer import WriterOutput
+    from applyops.evals import (
+        Rubric,
+        fact_concentration,
+        grounding_density,
+        jd_coverage_score,
+        load_fixture,
+        tone_drift_count,
+    )
+    from applyops.evals.rubrics import RubricMetric, grade
+    from applyops.evals.scorers import cover_letter_addresses_protocol
+
+    rubric = Rubric(
+        name="writer-output-rubric-v1",
+        metrics=[
+            RubricMetric(
+                name="jd_coverage_high_importance",
+                scorer=jd_coverage_score,
+                threshold=0.75,
+                direction=">=",
+                needs=["writer_output", "role_analysis"],
+            ),
+            RubricMetric(name="grounding_density", scorer=grounding_density, threshold=1.0),
+            RubricMetric(name="fact_concentration", scorer=fact_concentration, threshold=4, direction="<="),
+            RubricMetric(name="tone_drift", scorer=tone_drift_count, threshold=0, direction="<="),
+            RubricMetric(
+                name="protocol_addressed",
+                scorer=cover_letter_addresses_protocol,
+                threshold=1.0,
+                needs=["writer_output", "role_analysis"],
+            ),
+        ],
+    )
+
+    cases = (
+        ["good", "bad_coverage", "overconcentrated"]
+        if case == "all"
+        else [case]
+    )
+    role = load_fixture("role_analysis.opendoor.json", RoleAnalysis)
+
+    overall_passed = True
+    for name in cases:
+        wo = load_fixture(f"writer_output.{name}.json", WriterOutput)
+        card = grade(rubric, case_name=name, writer_output=wo, role_analysis=role)
+        table = Table(title=f"case: {name}")
+        table.add_column("metric", style="cyan")
+        table.add_column("value", justify="right")
+        table.add_column("threshold", justify="right")
+        table.add_column("result", justify="center")
+        for s in card.scores:
+            verdict = "[green]pass[/green]" if s.passed else "[red]fail[/red]"
+            table.add_row(s.metric, f"{s.value:.2f}", f"{s.direction} {s.threshold}", verdict)
+        console.print(table)
+        if not card.passed:
+            overall_passed = False
+            console.print(f"  [red]case {name} failed[/red]")
+        else:
+            console.print(f"  [green]case {name} passed[/green]")
+        console.print()
+
+    if not overall_passed:
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def run(
     jd_url: str = typer.Option(
