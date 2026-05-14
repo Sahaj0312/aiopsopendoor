@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 from applyops.agents.critic import CriticGate, RubricFindings
+from applyops.agents.factchecker import (
+    ClaimAudit,
+    FactCheckerAgent,
+    FactCheckOutput,
+    Flag,
+)
 from applyops.agents.recruiter import RecruiterAgent, RoleAnalysis
 from applyops.agents.types import JDMeta, Requirement
 from applyops.agents.writer import (
@@ -16,10 +22,14 @@ from applyops.agents.writer import (
 )
 
 __all__ = [
+    "ClaimAudit",
     "CoverLetter",
     "CriticGate",
     "CVDraft",
     "CVEntry",
+    "FactCheckerAgent",
+    "FactCheckOutput",
+    "Flag",
     "GroundedClaim",
     "JDMeta",
     "RecruiterAgent",
