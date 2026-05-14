@@ -326,6 +326,16 @@ def run(
         "--jd-wait-selector",
         help="CSS selector to wait for after page load (rendered fetch only).",
     ),
+    voluntary_file: Path = typer.Option(
+        Path("inputs/voluntary.local.json"),
+        "--voluntary-file",
+        help=(
+            "JSON file with voluntary EEOC / veteran / disability / SMS-consent "
+            "answers. Each key (gender, race, hispanic_latino, veteran_status, "
+            "disability_status, sms_consent) maps to the dropdown option text. "
+            "Silently skipped if the file doesn't exist."
+        ),
+    ),
     original_resume: Path = typer.Option(
         None,
         "--original-resume",
@@ -356,6 +366,12 @@ def run(
     if jd_file is not None:
         jd_url = None
 
+    voluntary: dict[str, str] | None = None
+    if voluntary_file and voluntary_file.exists():
+        import json as _json
+
+        voluntary = _json.loads(voluntary_file.read_text(encoding="utf-8"))
+
     cfg = RunConfig(
         jd_url=jd_url,
         jd_file=jd_file,
@@ -373,6 +389,7 @@ def run(
         render_jd=render_jd,
         jd_wait_selector=jd_wait_selector,
         original_resume_path=original_resume,
+        voluntary_disclosures=voluntary,
     )
 
     from applyops.obs import setup_tracing

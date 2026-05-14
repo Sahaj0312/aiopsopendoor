@@ -43,7 +43,10 @@ class FormField(BaseModel):
     name: str
     label: str
     value: str
-    kind: str = Field(..., description="text | textarea | file | select | url")
+    kind: str = Field(
+        ...,
+        description="text | textarea | file | url | select. 'select' values are the human-readable dropdown option text.",
+    )
     source_artifact: str = Field(
         ...,
         description="Where the value came from: 'cv.md', 'cover.md', 'facts.local.json', 'literal'.",
@@ -89,6 +92,7 @@ class SubmitterAgent:
         output_root: str | Path = "outputs",
         render_pdf: bool = True,
         original_resume_path: str | Path | None = None,
+        voluntary_disclosures: dict[str, str] | None = None,
     ) -> None:
         self.target_url = target_url
         self.candidate_name = candidate_name
@@ -98,6 +102,7 @@ class SubmitterAgent:
         self.output_root = Path(output_root)
         self.render_pdf = render_pdf
         self.original_resume_path = Path(original_resume_path) if original_resume_path else None
+        self.voluntary_disclosures = dict(voluntary_disclosures or {})
 
     def run(self, ctx: StackContext) -> SubmitterOutput:
         writer_output = ctx.output_of("writer")
@@ -270,6 +275,30 @@ class SubmitterAgent:
                     value=str(cover_pdf_path),
                     kind="file",
                     source_artifact="cover.pdf",
+                )
+            )
+
+        # Voluntary EEOC / disability / veteran / SMS-consent dropdowns.
+        # Values are the human-readable option strings; the submit-time LLM
+        # routes them to the matching dropdown on the page.
+        _LABELS = {
+            "gender": "Gender",
+            "race": "Race",
+            "hispanic_latino": "Hispanic / Latino",
+            "veteran_status": "Veteran Status",
+            "disability_status": "Disability Status",
+            "sms_consent": "Text message consent",
+        }
+        for key, value in self.voluntary_disclosures.items():
+            if not value:
+                continue
+            fields.append(
+                FormField(
+                    name=f"voluntary_{key}",
+                    label=_LABELS.get(key, key.replace("_", " ").title()),
+                    value=value,
+                    kind="select",
+                    source_artifact="voluntary.local.json",
                 )
             )
 

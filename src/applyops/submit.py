@@ -75,6 +75,7 @@ Set `fill_kind`:
 - "type" — `locator.fill(value)` (text inputs, textareas, combobox typing)
 - "upload" — `locator.set_input_files(value)` (file inputs; value is a local path)
 - "click" — `locator.click()` (checkboxes you want checked, radio buttons)
+- "select" — for dropdown / "Select..." pickers: locator points at the dropdown trigger; the framework will click it open, then click the option whose accessible name matches `value`. Use this for any custom combobox (Rippling EEO self-ID dropdowns are all this kind).
 - "skip" — no plausible match on the page; leave it for the human
 
 `value` is the value to fill / upload (carry from field_plan, or the file path
@@ -120,7 +121,7 @@ class FieldLocator(BaseModel):
         default="",
         description="CSS selector or XPath. Used only when locator_strategy=='selector'. Examples: \"input[type='file']\", \"#email\", \"xpath=//button[contains(., 'Submit')]\".",
     )
-    fill_kind: Literal["type", "upload", "click", "skip"]
+    fill_kind: Literal["type", "upload", "click", "select", "skip"]
     value: str = Field(default="")
 
 
@@ -316,6 +317,8 @@ def _execute_fills(
                 locator.set_input_files(fl.value)
             elif fl.fill_kind == "click":
                 locator.click()
+            elif fl.fill_kind == "select":
+                _select_dropdown_option(page, locator, fl.value)
             filled.append(fl.plan_field_name)
             console.print(
                 f"  [green]ok[/green]      {fl.plan_field_name}: "
@@ -325,6 +328,23 @@ def _execute_fills(
             skipped.append(fl.plan_field_name)
             console.print(f"  [red]fail[/red]    {fl.plan_field_name}: {type(exc).__name__}: {exc}")
     return filled, skipped
+
+
+def _select_dropdown_option(page: Any, trigger: Any, option_text: str) -> None:
+    """Click a custom-dropdown trigger, then click the option matching `option_text`.
+
+    First tries Playwright's native `select_option` (works for real <select>
+    elements). Falls back to the open-then-click pattern that Rippling /
+    Greenhouse-style custom React combos need.
+    """
+    try:
+        trigger.select_option(label=option_text, timeout=2000)
+        return
+    except Exception:
+        pass
+    trigger.click()
+    page.wait_for_timeout(200)
+    page.get_by_role("option", name=option_text).first.click()
 
 
 def _build_locator(page: Any, fl: FieldLocator) -> Any:
