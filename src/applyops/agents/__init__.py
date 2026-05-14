@@ -10,6 +10,13 @@ from applyops.agents.factchecker import (
     Flag,
 )
 from applyops.agents.recruiter import RecruiterAgent, RoleAnalysis
+from applyops.agents.submitter import (
+    FormField,
+    FormFillPlan,
+    SubmitterAgent,
+    SubmitterBlocked,
+    SubmitterOutput,
+)
 from applyops.agents.types import JDMeta, Requirement
 from applyops.agents.writer import (
     CoverLetter,
@@ -30,12 +37,17 @@ __all__ = [
     "FactCheckerAgent",
     "FactCheckOutput",
     "Flag",
+    "FormField",
+    "FormFillPlan",
     "GroundedClaim",
     "JDMeta",
     "RecruiterAgent",
     "Requirement",
     "RoleAnalysis",
     "RubricFindings",
+    "SubmitterAgent",
+    "SubmitterBlocked",
+    "SubmitterOutput",
     "WriterAgent",
     "WriterOutput",
     "WriterValidationError",
