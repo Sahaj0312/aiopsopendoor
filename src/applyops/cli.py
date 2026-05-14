@@ -189,6 +189,61 @@ def eval_cmd(
 
 
 @app.command()
+def submit(
+    run_id: str = typer.Argument(
+        ...,
+        help="Run directory name under --output-root (e.g. run_20260513T193000Z_abc123).",
+    ),
+    output_root: Path = typer.Option(
+        Path("outputs"),
+        "--output-root",
+        envvar="APPLYOPS_OUTPUT_ROOT",
+    ),
+    model: str = typer.Option(
+        os.getenv("APPLYOPS_DEFAULT_MODEL", "gpt-4.1"),
+        "--model",
+        "-m",
+        help="OpenAI model for the LLM field-mapping pass.",
+    ),
+    headless: bool = typer.Option(
+        False,
+        "--headless/--headed",
+        help="Run the browser headless. Default headed so the human can watch the form fill.",
+    ),
+) -> None:
+    """Drive the ATS form for a completed run. Pauses for explicit human SUBMIT."""
+    from openai import OpenAI
+
+    from applyops.agents.recruiter import OpenAIStructuredLLM
+    from applyops.obs import setup_tracing
+    from applyops.submit import submit as run_submit
+
+    setup_tracing()
+    run_dir = output_root / run_id
+    if not run_dir.exists():
+        console.print(f"[red]error[/red]: run directory not found: {run_dir}")
+        raise typer.Exit(code=2)
+
+    llm = OpenAIStructuredLLM(OpenAI())
+    console.print(f"[bold]applyops submit[/bold] — {run_dir}")
+    record = run_submit(run_dir, llm=llm, model=model, headless=headless, console=console)
+
+    color = {
+        "submitted": "green",
+        "cancelled_by_human": "yellow",
+        "blocked_no_target_url": "red",
+        "error": "red",
+    }[record.outcome]
+    console.print(f"\n[{color}]outcome: {record.outcome}[/{color}]")
+    console.print(f"  fields filled:  {record.fields_filled}")
+    console.print(f"  fields skipped: {record.fields_skipped}")
+    if record.submit_url_after:
+        console.print(f"  url after:      {record.submit_url_after}")
+    if record.error:
+        console.print(f"  error:          {record.error}")
+
+
+@app.command()
 def run(
     jd_url: str = typer.Option(
         None,
