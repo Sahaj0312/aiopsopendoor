@@ -1,9 +1,10 @@
 """applyops CLI — entry point.
 
-Subcommands grow as the system gains capability. Today:
+Subcommands:
 - version
-- facts parse — PDF → facts.local.json draft (all unverified)
-- facts status — show what's verified vs not in a facts file
+- facts parse / status — manage the candidate's source of truth
+- run — execute the full stack end-to-end (recruiter → writer → critic
+  → factchecker → submitter)
 """
 
 from __future__ import annotations
@@ -33,9 +34,20 @@ app.add_typer(facts_app, name="facts")
 console = Console()
 
 
+def _load_dotenv_if_present() -> None:
+    """Best-effort .env load. Silently ignores absence."""
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
+
+
 @app.callback()
 def _main() -> None:
     """applyops — application as production AI Ops."""
+    _load_dotenv_if_present()
 
 
 @app.command()
@@ -61,7 +73,6 @@ def facts_parse(
     ),
 ) -> None:
     """Parse a resume PDF into a draft facts file. All facts come back unverified."""
-    # Lazy import so `applyops version` doesn't pay the openai-client init cost.
     from openai import OpenAI
 
     from applyops.agents.recruiter import OpenAIStructuredLLM
@@ -102,6 +113,158 @@ def facts_status(
             f"[yellow]{n_unverified} fact(s) still unverified.[/yellow] "
             "Edit the file and set `verified_by: self` on entries you attest."
         )
+
+
+@app.command()
+def run(
+    jd_url: str = typer.Option(
+        None,
+        "--jd-url",
+        envvar="APPLYOPS_JD_URL",
+        help="ATS URL to fetch the JD from. Mutually exclusive with --jd-file.",
+    ),
+    jd_file: Path = typer.Option(
+        None,
+        "--jd-file",
+        exists=True,
+        help="Local JD markdown file. Used instead of --jd-url for offline runs.",
+    ),
+    facts: Path = typer.Option(
+        Path("inputs/facts.local.json"),
+        "--facts",
+        exists=True,
+        envvar="APPLYOPS_FACTS_PATH",
+        help="Path to the candidate's facts file.",
+    ),
+    candidate_email: str = typer.Option(
+        ...,
+        "--email",
+        envvar="APPLYOPS_CANDIDATE_EMAIL",
+        help="Email to put on the application.",
+    ),
+    candidate_phone: str = typer.Option(
+        None,
+        "--phone",
+        envvar="APPLYOPS_CANDIDATE_PHONE",
+        help="Phone (optional).",
+    ),
+    output_root: Path = typer.Option(
+        Path("outputs"),
+        "--output-root",
+        envvar="APPLYOPS_OUTPUT_ROOT",
+    ),
+    snapshot_dir: Path = typer.Option(
+        Path("inputs"),
+        "--snapshot-dir",
+        help="Where the recruiter snapshots fetched JDs.",
+    ),
+    target_url_override: str = typer.Option(
+        None,
+        "--target-url",
+        help="Override the form target URL (used in form_plan.json).",
+    ),
+    recruiter_model: str = typer.Option(
+        os.getenv("APPLYOPS_RECRUITER_MODEL", "gpt-4.1-mini"),
+        "--recruiter-model",
+    ),
+    writer_model: str = typer.Option(
+        os.getenv("APPLYOPS_DEFAULT_MODEL", "gpt-4.1"),
+        "--writer-model",
+    ),
+    critic_model: str = typer.Option(
+        os.getenv("APPLYOPS_CRITIC_MODEL", "gpt-4.1-mini"),
+        "--critic-model",
+    ),
+    factcheck_model: str = typer.Option(
+        os.getenv("APPLYOPS_FACTCHECK_MODEL", "gpt-4.1"),
+        "--factcheck-model",
+    ),
+    max_rebases: int = typer.Option(
+        3,
+        "--max-rebases",
+        help="Per-gate rebase budget before the run blocks.",
+    ),
+) -> None:
+    """Run the full applyops pipeline end-to-end."""
+    from applyops.runner import RunConfig, execute
+
+    if jd_url is None and jd_file is None:
+        console.print(
+            "[red]error[/red]: provide --jd-url or --jd-file "
+            "(or set APPLYOPS_JD_URL in .env)"
+        )
+        raise typer.Exit(code=2)
+
+    cfg = RunConfig(
+        jd_url=jd_url,
+        jd_file=jd_file,
+        facts_path=facts,
+        output_root=output_root,
+        snapshot_dir=snapshot_dir,
+        candidate_email=candidate_email,
+        candidate_phone=candidate_phone,
+        target_url_override=target_url_override,
+        recruiter_model=recruiter_model,
+        writer_model=writer_model,
+        critic_model=critic_model,
+        factcheck_model=factcheck_model,
+        max_rebases_per_gate=max_rebases,
+    )
+
+    console.print("[bold]applyops[/bold] running…")
+    console.print(f"  facts: {facts}")
+    console.print(f"  jd:    {jd_url or jd_file}")
+    console.print(f"  out:   {output_root}/")
+    console.print()
+
+    run_record, ctx = execute(cfg)
+    run_record.persist(output_root)
+    _print_summary(run_record, ctx)
+
+
+def _print_summary(run_record, ctx) -> None:  # type: ignore[no-untyped-def]
+    """Render a compact end-of-run summary."""
+    from applyops.gstack.run import RunStatus
+
+    status_color = {
+        RunStatus.COMPLETED: "green",
+        RunStatus.PARTIAL: "yellow",
+        RunStatus.BLOCKED: "red",
+        RunStatus.FAILED: "red",
+        RunStatus.RUNNING: "yellow",
+    }[run_record.status]
+    console.print(
+        f"[{status_color}]run {run_record.id}: {run_record.status.value}[/{status_color}]"
+    )
+    if run_record.blocked_on:
+        console.print(f"  blocked_on: {run_record.blocked_on}")
+    if run_record.error:
+        console.print(f"  error: {run_record.error}")
+    table = Table(title="Layers")
+    table.add_column("layer", style="cyan")
+    table.add_column("ran", justify="center")
+    table.add_column("rebases", justify="right")
+    table.add_column("gate verdict")
+    for name, state in ctx.layers.items():
+        ran = "[green]yes[/green]" if state.output is not None else "[red]no[/red]"
+        gate = "—"
+        if state.gate_reviews:
+            last = state.gate_reviews[-1]
+            gate = "[green]pass[/green]" if last.passed else "[red]fail[/red]"
+        table.add_row(name, ran, str(state.rebases), gate)
+    console.print(table)
+
+    if "submitter" in ctx.layers and ctx.layers["submitter"].output is not None:
+        sub = ctx.layers["submitter"].output
+        console.print(f"\n[bold]artifacts[/bold] written to {sub.output_dir}/")
+        console.print(f"  cv:    {sub.cv_md_path}")
+        console.print(f"  cover: {sub.cover_md_path}")
+        console.print(f"  plan:  {sub.form_plan_path}")
+        console.print(f"  audit: {sub.audit_md_path}")
+    elif run_record.notes:
+        console.print("\n[bold]run notes[/bold]")
+        for note in run_record.notes:
+            console.print(f"  - {note}")
 
 
 if __name__ == "__main__":
