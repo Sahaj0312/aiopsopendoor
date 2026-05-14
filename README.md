@@ -75,27 +75,39 @@ Current phase: **bootstrap**. See [the task list in the commits](https://github.
 ## Running it
 
 ```bash
-# install
-make install                    # uv preferred; falls back to pip
+# install (the [submit] extras pull Playwright; needed for live JD fetch + form-fill)
+pip install -e ".[dev,obs,submit]"
+playwright install chromium
 
-# fast path: end-to-end with HITL gate before submission
-applyops run --jd inputs/jd.opendoor.md
+# set up
+cp .env.example .env            # fill in OPENAI_API_KEY (and LANGFUSE_* for traces)
+applyops facts parse inputs/private/sahaj_resume.pdf   # PDF → facts.local.json draft
+applyops facts status            # eyeball facts; flip provenance.verified_by to "self"
 
-# stacked workflow: land one layer at a time
-applyops layer recruiter
-applyops layer writer
-applyops critic --on writer     # blocks until rubric passes
-applyops layer factcheck
-applyops submit --dry-run       # shows form-fill plan, does not submit
+# pipeline run: fetch JD, draft, critique, factcheck, render artifacts (no submission)
+applyops run \
+    --jd-url https://ats.rippling.com/en-CA/opendoor/ \
+    --render-jd \
+    --email sahajchhabra03@gmail.com
+
+# outputs/<run-id>/ now has: cv.md, cv.pdf, cover.md, cover.pdf, audit.md, form_plan.json
+# read audit.md first. If safe_to_submit is true:
+applyops submit <run-id>         # opens a headed browser, fills the form, asks for SUBMIT
 ```
+
+The `submit` command pauses with a `=== HUMAN REVIEW ===` prompt and waits
+for you to type `SUBMIT` exactly. Anything else cancels and leaves the
+browser open with the filled state so you can finish manually.
 
 ---
 
 ## Safety and honesty
 
 - `facts.json` is the only source of factual claims. Anything that doesn't trace back to it is flagged by the fact-checker and blocks the stack.
-- `.env`, personal application data, and ATS confirmation details are gitignored.
-- The submitter never auto-submits. The final form requires explicit human consent in the CLI.
+- Every cited fact must be **attested** (`verified_by: "self"` or `"third_party"`) before the writer can ground on it. The PDF parser produces `"ai_extracted_unverified"` drafts that the user must explicitly attest.
+- `.env`, personal application data, ATS submission screenshots, and `facts.local.json` are gitignored.
+- The `submit` command opens a **headed** browser, fills the form, screenshots the pre-submit state, then **pauses with a human-review prompt**. The user must type `SUBMIT` exactly to click the actual submit button. Any other input cancels and leaves the browser open so the human can finish manually.
+- The form-submission step is intentionally separated from `applyops run`. A pipeline run never submits anything. A human types one explicit command per submission.
 - AI drafts, critiques, and automates. Human approves, signs, sends.
 
 ---
@@ -105,7 +117,9 @@ applyops submit --dry-run       # shows form-fill plan, does not submit
 1. [`docs/00-incident.md`](docs/00-incident.md) — what we're treating as the incident and why.
 2. [`docs/01-architecture.md`](docs/01-architecture.md) — gstack model in detail.
 3. [`src/applyops/gstack/`](src/applyops/gstack/) — the orchestrator. Small, no framework.
-4. [`src/applyops/agents/`](src/applyops/agents/) — agents and their prompts.
-5. [`src/applyops/evals/`](src/applyops/evals/) — what "good" means, defined as code.
-6. `runs/<latest>/` — the trace, the eval scores, the decision log of the run that produced the submitted application.
-7. [`docs/99-retrospective.md`](docs/99-retrospective.md) — what worked, what didn't, what I'd change.
+4. [`src/applyops/agents/`](src/applyops/agents/) — agents and their prompts (recruiter, writer, critic gate, factchecker, submitter).
+5. [`src/applyops/evals/`](src/applyops/evals/) — what "good" means, defined as code. Run with `pytest -m eval` or `applyops eval`.
+6. [`src/applyops/submit.py`](src/applyops/submit.py) — the LLM-driven Playwright form-filler, kept deliberately outside the gstack pipeline because submission is irreversible.
+7. [`src/applyops/obs/`](src/applyops/obs/) — OpenTelemetry instrumentation; nested spans for `stack.land` → `layer.<name>` → `llm.parse` with token counts.
+8. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — the eval rubric as a merge gate.
+9. `outputs/<run-id>/audit.md` — for any actual run, the factchecker's per-claim verdicts.
