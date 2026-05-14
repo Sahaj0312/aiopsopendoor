@@ -26,7 +26,9 @@ env/
 # Personal application data — only redacted examples ever land in git
 inputs/*.local.*
 inputs/private/
-outputs/private/
+inputs/jd.*.md
+!inputs/jd.example.md
+outputs/
 evidence/private/
 *.resume.pdf
 *.cv.pdf
