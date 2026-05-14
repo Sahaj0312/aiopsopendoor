@@ -97,9 +97,7 @@ class SubmitterAgent:
         self.candidate_links = dict(candidate_links or {})
         self.output_root = Path(output_root)
         self.render_pdf = render_pdf
-        self.original_resume_path = (
-            Path(original_resume_path) if original_resume_path else None
-        )
+        self.original_resume_path = Path(original_resume_path) if original_resume_path else None
 
     def run(self, ctx: StackContext) -> SubmitterOutput:
         writer_output = ctx.output_of("writer")

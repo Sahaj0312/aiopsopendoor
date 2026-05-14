@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("playwright")
-
 from applyops.agents.jd_source import PlaywrightJDSource
+
+pytest.importorskip("playwright")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "fake_ats_jd.html"
 

@@ -175,9 +175,7 @@ class PlaywrightJDSource:
                 page = context.new_page()
                 page.goto(self.url, wait_until="networkidle", timeout=self.wait_timeout_ms)
                 if self.wait_for_selector:
-                    page.wait_for_selector(
-                        self.wait_for_selector, timeout=self.wait_timeout_ms
-                    )
+                    page.wait_for_selector(self.wait_for_selector, timeout=self.wait_timeout_ms)
                 # Give late-loading content a beat to settle (Rippling, Greenhouse).
                 page.wait_for_timeout(500)
                 return page.content()

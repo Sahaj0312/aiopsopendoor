@@ -10,9 +10,9 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("playwright")
-
 from applyops.render import markdown_to_pdf
+
+pytest.importorskip("playwright")
 
 
 SAMPLE_MD = """# Sahaj Chhabra

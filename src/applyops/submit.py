@@ -36,7 +36,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
@@ -296,7 +296,7 @@ def _request_field_map(
 
 
 def _execute_fills(
-    page: object,
+    page: Any,
     field_map: SubmitFieldMap,
     *,
     console: Console,
@@ -323,23 +323,26 @@ def _execute_fills(
             )
         except Exception as exc:
             skipped.append(fl.plan_field_name)
-            console.print(
-                f"  [red]fail[/red]    {fl.plan_field_name}: "
-                f"{type(exc).__name__}: {exc}"
-            )
+            console.print(f"  [red]fail[/red]    {fl.plan_field_name}: {type(exc).__name__}: {exc}")
     return filled, skipped
 
 
-def _build_locator(page: object, fl: FieldLocator) -> object:
-    """Return a Playwright Locator for `fl` using the requested strategy."""
+def _build_locator(page: Any, fl: FieldLocator) -> Any:
+    """Return a Playwright Locator for `fl` using the requested strategy.
+
+    `page` is typed as `Any` because the real type
+    (playwright.sync_api.Page) is an optional dependency — the package
+    works without playwright installed for everything except the live
+    submit path. The locator object returned is similarly opaque to mypy.
+    """
     if fl.locator_strategy == "role":
-        return page.get_by_role(fl.role, name=fl.name)  # type: ignore[attr-defined]
+        return page.get_by_role(fl.role, name=fl.name)
     if fl.locator_strategy == "label":
-        return page.get_by_label(fl.name)  # type: ignore[attr-defined]
+        return page.get_by_label(fl.name)
     if fl.locator_strategy == "placeholder":
-        return page.get_by_placeholder(fl.name)  # type: ignore[attr-defined]
+        return page.get_by_placeholder(fl.name)
     if fl.locator_strategy == "selector":
-        return page.locator(fl.selector)  # type: ignore[attr-defined]
+        return page.locator(fl.selector)
     raise ValueError(f"unknown locator_strategy: {fl.locator_strategy}")
 
 
@@ -352,7 +355,7 @@ def _locator_summary(fl: FieldLocator) -> str:
 
 
 def _human_review_gate(
-    page: object,
+    page: Any,
     field_map: SubmitFieldMap,
     run_id: str,
     target_url: str,
@@ -363,7 +366,9 @@ def _human_review_gate(
     console.print("[bold]=== HUMAN REVIEW ===[/bold]")
     console.print(f"  run:    {run_id}")
     console.print(f"  url:    {target_url}")
-    console.print(f"  submit: role={field_map.submit_button_role}, name={field_map.submit_button_name!r}")
+    console.print(
+        f"  submit: role={field_map.submit_button_role}, name={field_map.submit_button_name!r}"
+    )
     console.print()
     console.print(
         f"Inspect the browser. To submit, type exactly [bold]{confirm_token}[/bold] "
@@ -371,23 +376,21 @@ def _human_review_gate(
     )
     answer = input("> ").strip()
     if answer != confirm_token:
-        console.print("[yellow]cancelled.[/yellow] browser will close; form remains filled until then.")
+        console.print(
+            "[yellow]cancelled.[/yellow] browser will close; form remains filled until then."
+        )
         return "cancelled_by_human"
 
     _click_submit(page, field_map, console=console)
     return "submitted"
 
 
-def _click_submit(page: object, field_map: SubmitFieldMap, *, console: Console) -> None:
-    submit_loc = page.get_by_role(  # type: ignore[attr-defined]
-        field_map.submit_button_role, name=field_map.submit_button_name
-    )
+def _click_submit(page: Any, field_map: SubmitFieldMap, *, console: Console) -> None:
+    submit_loc = page.get_by_role(field_map.submit_button_role, name=field_map.submit_button_name)
     console.print("[bold]submitting…[/bold]")
     submit_loc.click()
-    page.wait_for_load_state("networkidle", timeout=30_000)  # type: ignore[attr-defined]
+    page.wait_for_load_state("networkidle", timeout=30_000)
 
 
 def _persist_record(rec: SubmissionRecord, run_dir: Path) -> None:
-    (run_dir / "submission.json").write_text(
-        rec.model_dump_json(indent=2), encoding="utf-8"
-    )
+    (run_dir / "submission.json").write_text(rec.model_dump_json(indent=2), encoding="utf-8")

@@ -22,10 +22,10 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel
 
-pytest.importorskip("playwright")
-
 from applyops.agents.submitter import FormField, FormFillPlan
 from applyops.submit import FieldLocator, SubmitFieldMap, submit
+
+pytest.importorskip("playwright")
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "fake_ats_form.html"
@@ -50,10 +50,34 @@ def _seed_run_dir(tmp_path: Path) -> Path:
     plan = FormFillPlan(
         target_url=f"file://{FIXTURE.resolve()}",
         fields=[
-            FormField(name="full_name", label="Full name", value="Test User", kind="text", source_artifact="literal"),
-            FormField(name="email", label="Email", value="test@example.com", kind="text", source_artifact="literal"),
-            FormField(name="phone", label="Phone", value="555-0100", kind="text", source_artifact="literal"),
-            FormField(name="resume", label="Resume", value=str(resume_pdf), kind="file", source_artifact="cv.pdf"),
+            FormField(
+                name="full_name",
+                label="Full name",
+                value="Test User",
+                kind="text",
+                source_artifact="literal",
+            ),
+            FormField(
+                name="email",
+                label="Email",
+                value="test@example.com",
+                kind="text",
+                source_artifact="literal",
+            ),
+            FormField(
+                name="phone",
+                label="Phone",
+                value="555-0100",
+                kind="text",
+                source_artifact="literal",
+            ),
+            FormField(
+                name="resume",
+                label="Resume",
+                value=str(resume_pdf),
+                kind="file",
+                source_artifact="cv.pdf",
+            ),
             FormField(
                 name="cover_letter",
                 label="Cover letter",
@@ -78,24 +102,42 @@ def _ats_field_map(resume_path: str) -> SubmitFieldMap:
     return SubmitFieldMap(
         fields=[
             FieldLocator(
-                plan_field_name="full_name", locator_strategy="role",
-                role="textbox", name="Full name", fill_kind="type", value="Test User",
+                plan_field_name="full_name",
+                locator_strategy="role",
+                role="textbox",
+                name="Full name",
+                fill_kind="type",
+                value="Test User",
             ),
             FieldLocator(
-                plan_field_name="email", locator_strategy="role",
-                role="textbox", name="Email", fill_kind="type", value="test@example.com",
+                plan_field_name="email",
+                locator_strategy="role",
+                role="textbox",
+                name="Email",
+                fill_kind="type",
+                value="test@example.com",
             ),
             FieldLocator(
-                plan_field_name="phone", locator_strategy="role",
-                role="textbox", name="Phone", fill_kind="type", value="555-0100",
+                plan_field_name="phone",
+                locator_strategy="role",
+                role="textbox",
+                name="Phone",
+                fill_kind="type",
+                value="555-0100",
             ),
             FieldLocator(
-                plan_field_name="resume", locator_strategy="label",
-                name="Resume", fill_kind="upload", value=resume_path,
+                plan_field_name="resume",
+                locator_strategy="label",
+                name="Resume",
+                fill_kind="upload",
+                value=resume_path,
             ),
             FieldLocator(
-                plan_field_name="cover_letter", locator_strategy="role",
-                role="textbox", name="Cover letter", fill_kind="type",
+                plan_field_name="cover_letter",
+                locator_strategy="role",
+                role="textbox",
+                name="Cover letter",
+                fill_kind="type",
                 value="I want this role and here's why.",
             ),
         ],
@@ -147,12 +189,20 @@ def test_submit_skips_unmappable_fields_without_raising(tmp_path: Path) -> None:
     bad_map = SubmitFieldMap(
         fields=[
             FieldLocator(
-                plan_field_name="full_name", locator_strategy="role",
-                role="textbox", name="Full name", fill_kind="type", value="x",
+                plan_field_name="full_name",
+                locator_strategy="role",
+                role="textbox",
+                name="Full name",
+                fill_kind="type",
+                value="x",
             ),
             FieldLocator(
-                plan_field_name="cover_letter", locator_strategy="role",
-                role="textbox", name="x", fill_kind="skip", value="",
+                plan_field_name="cover_letter",
+                locator_strategy="role",
+                role="textbox",
+                name="x",
+                fill_kind="skip",
+                value="",
             ),
         ],
         submit_button_role="button",
