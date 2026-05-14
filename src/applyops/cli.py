@@ -245,7 +245,7 @@ def submit(
 
 @app.command()
 def run(
-    jd_url: str = typer.Option(
+    jd_url: str | None = typer.Option(
         None,
         "--jd-url",
         envvar="APPLYOPS_JD_URL",
@@ -350,6 +350,12 @@ def run(
         )
         raise typer.Exit(code=2)
 
+    # If an explicit --jd-file is given, it always wins, even if APPLYOPS_JD_URL
+    # is set in .env. Suppress the URL so build_jd_source picks FileJDSource and
+    # the banner displays the actual source we'll use.
+    if jd_file is not None:
+        jd_url = None
+
     cfg = RunConfig(
         jd_url=jd_url,
         jd_file=jd_file,
@@ -385,7 +391,32 @@ def run(
 
     run_record, ctx = execute(cfg)
     run_record.persist(output_root)
+    _persist_debug_state(run_record, ctx, output_root)
     _print_summary(run_record, ctx)
+
+
+def _persist_debug_state(run_record, ctx, output_root: Path) -> None:  # type: ignore[no-untyped-def]
+    """Write a JSON dump of every layer's outputs + gate reviews to the run dir.
+
+    Crucial for diagnosing BLOCKED runs: the user can read the critic's
+    findings and the writer's most recent draft instead of re-running blind.
+    """
+    import json
+
+    run_dir = output_root / run_record.id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    debug: dict[str, object] = {"run_id": run_record.id, "layers": {}}
+    for name, state in ctx.layers.items():
+        debug["layers"][name] = {  # type: ignore[index]
+            "rebases": state.rebases,
+            "stale": state.stale,
+            "output": state.output.model_dump(mode="json") if state.output else None,
+            "gate_reviews": [r.model_dump(mode="json") for r in state.gate_reviews],
+            "pending_rebase": (
+                state.pending_rebase.model_dump(mode="json") if state.pending_rebase else None
+            ),
+        }
+    (run_dir / "debug.json").write_text(json.dumps(debug, indent=2, default=str))
 
 
 def _print_summary(run_record, ctx) -> None:  # type: ignore[no-untyped-def]
@@ -427,10 +458,45 @@ def _print_summary(run_record, ctx) -> None:  # type: ignore[no-untyped-def]
         console.print(f"  cover: {sub.cover_md_path}")
         console.print(f"  plan:  {sub.form_plan_path}")
         console.print(f"  audit: {sub.audit_md_path}")
-    elif run_record.notes:
+
+    # When a gate blocks the run, surface WHY so the user can fix it without
+    # having to crack open debug.json.
+    if run_record.status == RunStatus.BLOCKED:
+        _print_block_diagnosis(ctx)
+
+    if run_record.notes:
         console.print("\n[bold]run notes[/bold]")
         for note in run_record.notes:
             console.print(f"  - {note}")
+
+
+def _print_block_diagnosis(ctx) -> None:  # type: ignore[no-untyped-def]
+    """Print the critic's findings on the layer that blocked the run."""
+    for name, state in ctx.layers.items():
+        if not state.gate_reviews:
+            continue
+        last = state.gate_reviews[-1]
+        if last.passed:
+            continue
+        console.print(f"\n[bold red]why the {name} layer was blocked[/bold red]")
+        if last.notes:
+            console.print(f"  rationale: {last.notes}")
+        if last.score is not None:
+            console.print(f"  score:     {last.score:.2f}")
+        if last.rebase_request is not None:
+            rr = last.rebase_request
+            if rr.findings:
+                console.print("  findings:")
+                for f in rr.findings:
+                    console.print(f"    - {f}")
+            if rr.suggested_changes:
+                console.print("  suggested changes:")
+                for s in rr.suggested_changes:
+                    console.print(f"    - {s}")
+        console.print(
+            f"\nfull context (writer draft + every rebase): "
+            f"[dim]outputs/{ctx.run.id}/debug.json[/dim]"
+        )
 
 
 if __name__ == "__main__":
